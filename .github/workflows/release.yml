@@ -8,12 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '当前所选 ref 上待发布的版本号（例如: v2.8.0）'
+        description: '当前所选 ref 上待发布的版本号（支持 v2.8.0 或 2.8.0）'
         required: true
         type: string
 
 env:
-  NODE_VERSION: '22'
+  NODE_VERSION: '24'
 
 jobs:
   test:
@@ -37,6 +37,9 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ inputs.version }}"
+            if [[ "$VERSION" != v* ]]; then
+              VERSION="v$VERSION"
+            fi
             echo "📝 Using manual input version: $VERSION"
           else
             VERSION="${GITHUB_REF#refs/tags/}"
@@ -73,6 +76,9 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ inputs.version }}"
+            if [[ "$VERSION" != v* ]]; then
+              VERSION="v$VERSION"
+            fi
             echo "📝 Using manual input version: $VERSION"
           else
             VERSION="${GITHUB_REF#refs/tags/}"
@@ -148,7 +154,7 @@ jobs:
           fetch-tags: true
 
       - name: 安装 pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
 
@@ -174,6 +180,8 @@ jobs:
           $repoInfo = "${{ github.repository }}".split("/")
           $repoOwner = $repoInfo[0]
           $repoName = $repoInfo[1]
+          $pkgJson.build.publish.owner = $repoOwner
+          $pkgJson.build.publish.repo = $repoName
 
           $pkgJson | ConvertTo-Json -Depth 10 | Set-Content $pkgPath -Encoding UTF8
 
@@ -246,7 +254,7 @@ jobs:
           fetch-tags: true
 
       - name: 安装 pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
 
@@ -265,8 +273,12 @@ jobs:
 
           jq --arg version "$TAG_VERSION" \
              --arg repo_url "$REPO_URL" \
+             --arg repo_owner "$REPO_OWNER" \
+             --arg repo_name "$REPO_NAME" \
              '.version = $version |
-              .repository.url = $repo_url' \
+              .repository.url = $repo_url |
+              .build.publish.owner = $repo_owner |
+              .build.publish.repo = $repo_name' \
              "$PKG_PATH" > "${PKG_PATH}.tmp" && mv "${PKG_PATH}.tmp" "$PKG_PATH"
 
           echo "✅ package.json updated successfully"
@@ -336,7 +348,7 @@ jobs:
           fetch-tags: true
 
       - name: 安装 pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
 
@@ -355,8 +367,12 @@ jobs:
 
           jq --arg version "$TAG_VERSION" \
              --arg repo_url "$REPO_URL" \
+             --arg repo_owner "$REPO_OWNER" \
+             --arg repo_name "$REPO_NAME" \
              '.version = $version |
-              .repository.url = $repo_url' \
+              .repository.url = $repo_url |
+              .build.publish.owner = $repo_owner |
+              .build.publish.repo = $repo_name' \
              "$PKG_PATH" > "${PKG_PATH}.tmp" && mv "${PKG_PATH}.tmp" "$PKG_PATH"
 
           echo "✅ package.json updated successfully"
@@ -447,7 +463,7 @@ jobs:
           fetch-tags: true
 
       - name: 安装 pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           run_install: false
 
